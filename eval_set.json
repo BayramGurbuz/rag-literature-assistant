@@ -1,0 +1,128 @@
+[
+  {
+    "id": "q01",
+    "type": "answerable",
+    "question": "HoloLens 2 üzerindeki 16 hedefli AR-SSVEP-BCI çalışmasında 8 komutlu UAV kontrol görevinde ortalama doğruluk kaç çıktı?",
+    "ground_truth": "8 komutlu UAV kontrol görevinde ortalama doğruluk %95,13 ± 4,39 oldu (16 hedefli Random Cue Task'ta %89,32 ± 8,43).",
+    "reference_pmids": ["42747938"]
+  },
+  {
+    "id": "q02",
+    "type": "answerable",
+    "question": "480 hedefli hibrit BCI sistemi hedefleri nasıl kodluyor ve çevrimiçi deneyde ortalama ITR kaç bits/min çıktı?",
+    "ground_truth": "SSVEP ve sEMG'yi birleştiriyor: 120 titreşim frekansı ve 4 jest hareketi ile 480 hedefi kodluyor. Çevrimiçi deneyde ortalama doğruluk %84,55 ± 7,23, ortalama ITR 260,07 ± 30,41 bits/min.",
+    "reference_pmids": ["42703192"]
+  },
+  {
+    "id": "q03",
+    "type": "answerable",
+    "question": "Kod modülasyonlu hareket görsel uyarılmış potansiyel (c-MVEP) paradigmasının çevrimiçi doğruluğu ve seçim süresi SSVEP ile karşılaştırıldığında nasıl?",
+    "ground_truth": "c-MVEP ortalama %85,67 doğruluk ve 2,61 sn seçim süresine ulaştı. SSVEP %93,42 doğruluk ve 1,94 sn ile daha iyiydi; c-VEP %97,81 ve 1,15 sn. c-MVEP yalnızca SSMVEP'ten (%64,91; 4,18 sn) daha iyiydi.",
+    "reference_pmids": ["42694198"]
+  },
+  {
+    "id": "q04",
+    "type": "answerable",
+    "question": "Alt ekstremite eksoskeleti için geliştirilen hibrit BCI'da SSVEP, göz kırpma ve diş sıkma hangi işler için kullanılıyor ve kullanılabilirlik skoru koltuk değneği kontrolüyle kıyasla nasıl?",
+    "ground_truth": "SSVEP hareket modu seçimi için, göz kırpma komutun yürütülmesi için, diş sıkma ise iptal için kullanılıyor. SUS skoru önerilen yöntemde 78,25, koltuk değneği kontrolünde 53,50 idi.",
+    "reference_pmids": ["42678835"]
+  },
+  {
+    "id": "q05",
+    "type": "answerable",
+    "question": "Periferik SSVEP tabanlı BCI'da hangi uyaran rengi seçildi ve neden?",
+    "ground_truth": "Yeşil seçildi. Dört renk (mavi, yeşil, kırmızı, beyaz) arasında doğruluk ve ITR açısından anlamlı fark yoktu, ancak yeşil en yüksek öznel konfor puanını aldı. Yeşille kurulan 12 hedefli sistem çevrimiçi %89,93 ± 6,10 doğruluk ve 47,96 ± 6,98 bits/min ITR verdi.",
+    "reference_pmids": ["42454243"]
+  },
+  {
+    "id": "q06",
+    "type": "answerable",
+    "question": "SCL-EEGMixer nedir ve P300 speller'da kalibrasyon yükünü nasıl azaltıyor?",
+    "ground_truth": "Evrişimli bir mikser ağını denetimli kontrastif öğrenmeyle birleştiren, hafif ve uçtan uca bir sinir ağı mimarisidir. Çapraz entropi ile denetimli kontrastif kaybı birleştiren hibrit kayıp sayesinde az etiketli veriden öğrenir; bir veya iki kalibrasyon karakteriyle eğitildiğinde bile yüksek doğruluk ve bilgi aktarım hızını korur.",
+    "reference_pmids": ["42455722"]
+  },
+  {
+    "id": "q07",
+    "type": "answerable",
+    "question": "ChatBCI-Assist'in çevrimiçi deneylerde ulaştığı ITR ve dakikadaki karakter sayısı (CPM) değerleri nedir?",
+    "ground_truth": "Ortalama (tahmini) ITR 105,2 bits/min. Kopya yazma görevlerinde 19,7 CPM, anlamsal yazma görevlerinde 30,7 CPM. Anlamsal ITR (SITR) 147,1 bits/min.",
+    "reference_pmids": ["42139128"]
+  },
+  {
+    "id": "q08",
+    "type": "answerable",
+    "question": "Locked-In Syndrome hastaları için önerilen topluluk (ensemble) sınıflandırıcı hangi modelleri birleştiriyor ve doğruluğu tekil modellere göre nasıl?",
+    "ground_truth": "Ayrık dalgacık dönüşümü (DWT) öznitelikleriyle SVM ve Random Forest'ı soft-voting ile birleştiriyor. Topluluk %97,5 doğruluğa ulaştı; tekil SVM %92,5, RF %89 idi.",
+    "reference_pmids": ["42002556"]
+  },
+  {
+    "id": "q09",
+    "type": "answerable",
+    "question": "BCI ile büyük dil modellerini birleştiren sistematik derleme kaç çalışmayı kapsıyor ve motor engelli hastalar dahil edilmiş mi?",
+    "ground_truth": "PRISMA'ya göre hazırlanan derleme on bir çalışmayı kapsıyor. Hiçbir çalışmaya motor engelli hasta dahil edilmemiş; on birden yedisi uzak OpenAI uç noktalarına dayanıyor.",
+    "reference_pmids": ["42202831"]
+  },
+  {
+    "id": "q10",
+    "type": "answerable",
+    "question": "İletişim BCI'larında kalibrasyon sırasındaki yorgunluk kopya yazma görevlerine göre nasıl ve RSVP ile SCP-matrix arayüzleri karşılaştırıldığında hangisi daha iyi performans verdi?",
+    "ground_truth": "Kalibrasyon sırasında algılanan zihinsel yorgunluk, çaba ve sıkıntı kopya yazmaya göre anlamlı ölçüde daha yüksekti. SCP-matrix arayüzü, RSVP'ye göre kopya yazma aşaması başına ortalama 1,5 daha fazla doğru karakter yazdırdı.",
+    "reference_pmids": ["41990822"]
+  },
+  {
+    "id": "q11",
+    "type": "answerable",
+    "question": "SSVEP'i yalnızca frontal EEG'den çözmek için önerilen DSTF-Net'in doğruluk kazancı ve test edilen kullanıcı grubu nedir?",
+    "ground_truth": "Temel yöntemlere göre en fazla %33,47 çözme doğruluğu artışı sağladı. Sağlıklı bir katılımcının verisiyle eğitilip, 8'i sırtüstü yatan beyin hasarlı hasta olmak üzere 20 yeni kullanıcıya aktarıldı.",
+    "reference_pmids": ["42527436"]
+  },
+  {
+    "id": "q12",
+    "type": "answerable",
+    "question": "İnme sonrası el fonksiyonu rehabilitasyonunda EEG tabanlı BCI'ın üç ana paradigması ve karşılaşılan zorluklar nelerdir?",
+    "ground_truth": "Üç paradigma: fiziksel geri bildirimli motor imgeleme, sanal/çok duyulu geri bildirimli motor imgeleme ve SSVEP güdümlü paradigma. Zorluklar: düşük sinyal-gürültü oranı, bireyler arası büyük değişkenlik ve 'BCI körlüğü'.",
+    "reference_pmids": ["42640039"]
+  },
+  {
+    "id": "q13",
+    "type": "answerable",
+    "question": "SPAR-EEG tek kanallı EEG'de hangi üç artefakt geçişini uyguluyor ve P300 doğrulamasında ne kazandırdı?",
+    "ground_truth": "Yüksek frekanslı EMG patlamaları için VMD tabanlı, göz kırpma benzeri EOG geçişleri için SSA tabanlı ve yavaş harekete bağlı kayma için SSA tabanlı olmak üzere üç geçiş uyguluyor. P300 doğrulamasında tekrar-eğrisi AUC'yi 0,048 artırdı ve son Letter@15 doğruluğunu 7,8 yüzde puan iyileştirdi.",
+    "reference_pmids": ["42747931"]
+  },
+  {
+    "id": "q14",
+    "type": "answerable",
+    "question": "SSVEP-TFFNet'in XR tabanlı SSVEP sınıflandırmasındaki performansı FBCCA'ya göre nasıl ve kanal sayısı azaltılınca ne oluyor?",
+    "ground_truth": "HoloLens 2 ile toplanan, 30 denek ve 1200 denemelik açık XR veri setinde SSVEP-TFFNet, FBCCA'dan daha iyi performans gösterdi. 6 ve 4 kanallık konfigürasyonlar 8 kanallı tam montajın performansına yakın kaldı.",
+    "reference_pmids": ["42655412"]
+  },
+  {
+    "id": "q15",
+    "type": "answerable",
+    "question": "XR ile entegre BCI'ların alternatif ve destekleyici iletişim (AAC) için kullanımına dair sistematik derlemeye kaç çalışma dahil edildi ve sonuç ne?",
+    "ground_truth": "İki uygun çalışma dahil edildi. Kanıt tabanı sınırlı ve heterojen. Biri klasik P300 speller'ın sürükleyici ekran uygulaması (geleneksel ekranlara benzer iletişim performansı), diğeri göz takibi ile BCI erişimini karşılaştıran giyilebilir karma gerçeklik AAC konseptiydi; göz takibi pratikte daha kullanılabilir görünüyordu.",
+    "reference_pmids": ["42529036"]
+  },
+  {
+    "id": "q16",
+    "type": "answerable",
+    "question": "Kalibrasyon yükünü azaltmak veya ortadan kaldırmak için hangi farklı yaklaşımlar öneriliyor?",
+    "ground_truth": "Birden fazla yaklaşım var: Bayesian signal matching (kaynak katılımcı verisiyle yeni katılımcıyı kalibre eden transfer öğrenmesi), SCL-EEGMixer (bir-iki kalibrasyon karakteriyle eğitim), LOTL (kalibrasyonsuz çevrimiçi transfer öğrenmesi) ve TRCA tabanlı satır-sütun kodlama/çözme stratejisi (paylaşılan frekans-faz bileşenlerini yeniden kullanma, beş kalibrasyon bloğu).",
+    "reference_pmids": ["42079853", "42455722", "42611663", "42747938"]
+  },
+  {
+    "id": "q17",
+    "type": "unanswerable",
+    "question": "Neuralink N1 implantı kaç elektrot içeriyor?",
+    "ground_truth": "Koleksiyonda bu bilgi yok; sistem ilgili içerik bulamadığını söylemeli.",
+    "reference_pmids": []
+  },
+  {
+    "id": "q18",
+    "type": "unanswerable",
+    "question": "Dokunsal uyaranlı P300 speller çalışmalarında ortalama doğruluk oranı nedir?",
+    "ground_truth": "Koleksiyonda dokunsal uyaranlı P300 speller çalışması yok; sistem bilmediğini belirtmeli.",
+    "reference_pmids": []
+  }
+]
