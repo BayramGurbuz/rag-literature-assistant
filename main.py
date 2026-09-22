@@ -11,7 +11,7 @@ from google import genai
 from google.genai import errors, types
 
 BASE_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/"
-GENERATION_MODEL = "gemini-3.5-flash"
+GENERATION_MODEL = "gemini-2.5-flash"
 NO_ANSWER_MARKER = "[BILGI_YOK]"  # model cevap bulamayınca yanıtın başına bunu koyar
 # Ölçüm: ilgili sorularda en yakın chunk 0.31–0.61, alakasız veya koleksiyon dışı sorularda ≥ 0.65.
 # Eşik yalnızca EN İYİ chunk'a uygulanır; geniş sorularda (örn. "hangi yaklaşımlar") tamamlayıcı
