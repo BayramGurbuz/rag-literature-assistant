@@ -233,6 +233,8 @@ def select_chunks(
 def retrieve(
     client: genai.Client, collection: chromadb.Collection, question: str, n_results: int = N_RESULTS
 ) -> tuple[list[str], list[dict]]:
+    if collection.count() == 0:
+        return [], []
     query = translate_query(client, question)
     query_embedding = embed_texts(client, [query], task_type="RETRIEVAL_QUERY")[0]
     results = collection.query(
