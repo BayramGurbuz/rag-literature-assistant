@@ -43,6 +43,7 @@ uv run fastapi dev api.py
 | Endpoint | Açıklama |
 |---|---|
 | `POST /ask` | `{"question": "...", "n_results": 3}` gönder, `{"answer": "..."}` al |
+| `POST /index` | `{"pmid": "..."}` gönder, PubMed'den çekip koleksiyona ekler — [mcp-literatur-server](https://github.com/BayramGurbuz/mcp-literatur-server)'ın `index_paper` tool'u bunu çağırıyor |
 | `GET /health` | Servisin ayakta olup olmadığını kontrol eder (dış bağımlılığa dokunmaz) |
 
 ```bash
@@ -50,6 +51,8 @@ curl -X POST http://127.0.0.1:8000/ask \
   -H "Content-Type: application/json" \
   -d '{"question": "SSVEP nedir?"}'
 ```
+
+**`/index` ve `INDEX_API_KEY`:** Gerçek bir Gemini embedding çağrısı yaptığı (maliyetli) bir yaz endpoint'i olduğu için, `INDEX_API_KEY` ortam değişkeni ayarlıysa istek bir `X-Api-Key` header'ı ile eşleşmeli; ayarlı değilse (yerel geliştirme) açık kalır.
 
 ### Docker
 

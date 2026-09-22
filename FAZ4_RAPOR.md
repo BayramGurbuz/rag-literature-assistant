@@ -89,8 +89,8 @@ Deploy adımlarının kendisi (Render hesabı açma, GitHub bağlama, env var gi
 
 ## 5. Sınırlamalar (dürüst değerlendirme)
 
-- **Render'ın ücretsiz katmanında disk kalıcı değil:** `startup_index()` çözümü, her container yeniden başladığında (uyku/uyanma, redeploy) koleksiyonu **sıfırdan** yeniden indeksliyor — bu, gerçek üretimde kabul edilemez bir maliyet (her cold start'ta PubMed + Gemini API çağrıları, ~20-60 saniye). Doğru çözüm, yönetilen bir vector DB (Pinecone, Weaviate Cloud) ya da Render'ın ücretli kalıcı disk özelliği olurdu.
-- **`index_paper` (Faz 3) artık production'da devre dışı:** `RAG_CHROMA_DB_PATH` Render'a hiç eklenmedi, bu yüzden Faz 3'ün MCP server'ı canlı ortamda makale ekleyemiyor — bu bilinçli bir tradeoff (Bölüm 0'daki not).
+- **Render'ın ücretsiz katmanında disk kalıcı değil:** `startup_index()` çözümü, her container yeniden başladığında (uyku/uyanma, redeploy) koleksiyonu **sıfırdan** yeniden indeksliyor — bu, gerçek üretimde kabul edilemez bir maliyet (her cold start'ta PubMed + Gemini API çağrıları, ~20-60 saniye). Doğru çözüm, yönetilen bir vector DB (Pinecone, Weaviate Cloud) ya da Render'ın ücretli kalıcı disk özelliği olurdu. Aynı sebeple, `POST /index` ile eklenen bir makale de bir sonraki cold start'ta kaybolur — `SEARCH_TERMS` listesindeki sabit konularla sınırlı yeniden dolduruluyor.
+- ~~`index_paper` (Faz 3) artık production'da devre dışı~~ — **çözüldü, bkz. Bölüm 8.**
 - **Eşzamanlılık düşünülmedi:** `main.py`'deki `_client`/`_collection` modül-seviyesi global'ler; Render tek worker'la çalıştığı için sorun değil, ama birden fazla worker/instance olsaydı her biri kendi indekslemesini ayrı ayrı yapardı.
 - **Faz 3 (mcp-literatur-server) bu fazın Docker/CI/Render adımlarından geçmedi** — kapsam kararı gereği (bkz. Bölüm 9) bu repo için ayrıca yapılması gerekiyor.
 - **`.dockerignore`'da `chroma_db/` hâlâ yok** (Alıştırma 2'nin kararı) ama artık pratik önemi kalmadı — Render zaten `startup_index()` ile dolduruyor; yalnızca yerel `docker build` + önceden `uv run main.py` akışında (CI'sız, saf Docker testi) hâlâ işe yarıyor.
@@ -107,6 +107,7 @@ Deploy adımlarının kendisi (Render hesabı açma, GitHub bağlama, env var gi
 | `.github/workflows/ci.yml` | Push/PR'da `uv sync` + `pytest` |
 | `main.py` (değişti) | `answer_question()`, `ensure_indexed()`, `startup_index()` eklendi; `retrieve()` boş koleksiyona karşı korumalı |
 | `.gitignore` | Bu repoda yeni eklendi (Bölüm 0) |
+| `api.py` (Bölüm 8) | `POST /index` eklendi — `mcp-literatur-server`'ın HTTP üzerinden çağırdığı endpoint |
 
 **Çalıştırma**
 ```bash
@@ -121,7 +122,26 @@ uv run pytest -v                       # 28 test
 
 ## 7. Sonraki adım önerileri
 
-1. **Faz 3'ü (mcp-literatur-server) aynı derinlikte işleme:** FastAPI/Docker/CI/Render adımlarını o repoya da uygulamak.
-2. **Kalıcı vector DB:** Render'ın her cold start'ta yeniden indekslemesi yerine Pinecone/Weaviate Cloud gibi yönetilen bir servise geçmek.
-3. **Faz 2 ↔ Faz 3 entegrasyonunu HTTP üzerinden yeniden kurmak:** `index_paper`'ın Chroma'ya doğrudan yazması yerine, `rag-literature-assistant`'a bir `/index` endpoint'i eklemek ve Faz 3'ün onu HTTP ile çağırması (Bölüm 0'da bırakılan (b) seçeneği).
+1. ~~Faz 3'ü (mcp-literatur-server) aynı derinlikte işleme~~ — **yapıldı**, o reponun kendi `FAZ4_RAPOR.md`'sine bak.
+2. **Kalıcı vector DB:** Render'ın her cold start'ta yeniden indekslemesi yerine Pinecone/Weaviate Cloud gibi yönetilen bir servise geçmek — `POST /index` ile eklenen makalelerin de cold start'ta kaybolmaması için bu artık daha önemli.
+3. ~~Faz 2 ↔ Faz 3 entegrasyonunu HTTP üzerinden yeniden kurmak~~ — **yapıldı, bkz. Bölüm 8.**
 4. **`startup_index()`'in engelleyici (blocking) doğası:** Şu an `/health` bile indeksleme bitene kadar cevap vermiyor (import zamanında çalışıyor); arka planda indeksleyip `/health`'i ayrı bir "ready" durumuyla ayırmak düşünülebilir.
+
+---
+
+## 8. Ek — `/index`: Faz 2 ↔ Faz 3 entegrasyonunu HTTP ile yeniden kurmak
+
+Bölüm 5'te bırakılan tradeoff çözüldü: `mcp-literatur-server`'ın `index_paper` tool'u artık Chroma'ya doğrudan yazmıyor (production'da paylaşılan disk yok), bunun yerine bu servisin `POST /index` endpoint'ini HTTP üzerinden çağırıyor.
+
+**`POST /index`:** `{"pmid": "..."}` alır, `fetch_papers`/`index_paper` (main.py'nin mevcut fonksiyonları, hiç değiştirilmeden yeniden kullanıldı) ile PubMed'den çekip parçalayıp embed'leyip `upsert` eder, `{"pmid", "chunks"}` döner. Geçersiz PMID'de 404.
+
+**`INDEX_API_KEY`:** Bu, gerçek Gemini embedding çağrısı yapan (maliyetli) bir yaz endpoint'i olduğu için, isteğe bağlı bir `X-Api-Key` koruması eklendi — env var ayarlıysa header eşleşmeli, ayarlı değilse (yerel geliştirme) açık kalır. Production'da (Render) ayarlandı; her iki servise de aynı paylaşılan sır verildi.
+
+**Uçtan uca gerçek doğrulama (canlı Render URL'lerinde):**
+1. `mcp-literatur-server`'a "PMID 37875091'i indeksle" dendi → agent `index_paper`'ı çağırdı → `POST https://rag-literature-assistant.onrender.com/index` gerçekten gitti → 200, 2 chunk (17sn).
+2. Hemen ardından `rag-literature-assistant`'a bu makalenin konusuyla ilgili bir soru soruldu ("neural control of cephalopod camouflage") — **daha önce koleksiyonda hiç olmayan bu konuda**, doğru kaynakla (Montague et al., 2023, PMID 37875091) cevap geldi. Halka kapandı: agent'ın bulduğu bir şey, gerçekten RAG'in bir sonraki cevabında kullanılabiliyor.
+3. `INDEX_API_KEY` ayarlıyken doğrudan `/index`'e header'sız istek atıldı → **401**, koruma doğrulandı.
+
+**Yan etki — `mcp-literatur-server` basitleşti:** `chromadb` ve embedding için `google-genai` kullanımı bu repodan tamamen kalktı (41 paket `pyproject.toml`'dan düştü) — artık makale fetch/chunk/embed mantığı yalnızca `rag-literature-assistant`'ta, tek yerde yaşıyor.
+
+**Yol boyunca bulunan ek bir sorun:** `agent_client.py`'nin `StdioServerParameters`'ı, `GEMINI_API_KEY` için daha önce eklenmiş olan açık `env=` geçişini **yalnızca o değişkene** sahipti — `RAG_API_URL`/`INDEX_API_KEY` de aynı allowlist sorununa takılıyordu (varsayılan olarak geçmiyorlardı), ve `paper_server.py` artık `genai.Client()` kullanmadığı için `GEMINI_API_KEY` geçişi zaten gereksizdi. `env=` sözlüğü `RAG_API_URL`/`INDEX_API_KEY`'i geçirecek şekilde güncellendi; `.env` dosyası tamamen kaldırılarak (yalnızca `os.environ`'dan silmek değil) hem yerelde hem Docker'da (host'taki servise `host.docker.internal` ile erişerek) rigorously test edildi.
