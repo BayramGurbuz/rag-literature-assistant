@@ -2,10 +2,16 @@ import os
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel
 
-from main import answer_question, startup_index  # Faz 2'deki fonksiyonların
+from main import (  # Faz 2'deki fonksiyonların
+    _get_client_and_collection,
+    answer_question,
+    fetch_papers,
+    index_paper,
+    startup_index,
+)
 
 load_dotenv()  # main.py bunu tembel çağırır; burada erken kontrol için hemen yapıyoruz
 
@@ -46,3 +52,37 @@ def ask(request: AskRequest) -> AskResponse:
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}
+
+
+class IndexRequest(BaseModel):
+    pmid: str
+
+
+class IndexResponse(BaseModel):
+    pmid: str
+    chunks: int
+
+
+@app.post("/index", response_model=IndexResponse)
+def index(request: IndexRequest, x_api_key: str | None = Header(default=None)) -> IndexResponse:
+    """Verilen PMID'yi PubMed'den çekip bu koleksiyona indeksler.
+
+    mcp-literatur-server'ın index_paper tool'u, artık Chroma'ya doğrudan
+    yazmak yerine bu endpoint'i çağırıyor — iki servis ayrı container'larda/
+    disklerde çalıştığı için paylaşılan bir dosyaya güvenemiyorlar.
+
+    INDEX_API_KEY ayarlıysa X-Api-Key header'ı onunla eşleşmeli — bu, gerçek
+    Gemini embedding çağrısı yapan (maliyetli) bir yaz endpoint'i, herkese
+    açık bırakılmasın diye. Ayarlı değilse (örn. yerel geliştirme) açık kalır.
+    """
+    expected_key = os.getenv("INDEX_API_KEY")
+    if expected_key and x_api_key != expected_key:
+        raise HTTPException(status_code=401, detail="Geçersiz veya eksik X-Api-Key.")
+
+    papers = fetch_papers([request.pmid])
+    if not papers:
+        raise HTTPException(status_code=404, detail=f"PMID {request.pmid} için abstract bulunamadı.")
+
+    client, collection = _get_client_and_collection()
+    n_chunks = index_paper(client, collection, papers[0])
+    return IndexResponse(pmid=request.pmid, chunks=n_chunks)
