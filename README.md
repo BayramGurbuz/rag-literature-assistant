@@ -4,9 +4,9 @@
 
 PubMed'den beyin-bilgisayar arayüzü (BCI/SSVEP/P300) makalelerini çekip indeksleyen, sorulara **kaynak göstererek** cevap veren bir RAG (Retrieval-Augmented Generation) sistemi. Koleksiyonda karşılığı olmayan sorularda uydurma yapmaz, bilmediğini söyler.
 
-**Canlı:** https://rag-literature-assistant.onrender.com/docs (Render ücretsiz katman — ilk istek soğuk başlangıç nedeniyle yavaş olabilir, bkz. [Deploy](#deploy-render))
+**Canlı:** https://rag-literature-assistant.onrender.com/ (basit bir soru-cevap arayüzü; ham API için [/docs](https://rag-literature-assistant.onrender.com/docs)) — Render ücretsiz katman, ilk istek soğuk başlangıç nedeniyle yavaş olabilir, bkz. [Deploy](#deploy-render).
 
-- **Üretim/hakem modeli:** `gemini-3.5-flash`
+- **Üretim/hakem modeli:** `gemini-2.5-flash`
 - **Embedding modeli:** `gemini-embedding-001`
 - **Vektör DB:** [Chroma](https://www.trychroma.com/) (`PersistentClient`, yerel diske kalıcı)
 
@@ -38,10 +38,11 @@ uv run main.py
 uv run fastapi dev api.py
 ```
 
-`http://127.0.0.1:8000/docs` adresinde interaktif Swagger arayüzü açılır.
+`http://127.0.0.1:8000/` adresinde basit bir soru-cevap arayüzü (`static/index.html`) açılır; `/docs`'ta ham API için Swagger.
 
 | Endpoint | Açıklama |
 |---|---|
+| `GET /` | Özel HTML/JS arayüz — soru sor, kaynaklı cevabı gör (Swagger değil, gerçek bir demo sayfası) |
 | `POST /ask` | `{"question": "...", "n_results": 3}` gönder, `{"answer": "..."}` al |
 | `POST /index` | `{"pmid": "..."}` gönder, PubMed'den çekip koleksiyona ekler — [mcp-literatur-server](https://github.com/BayramGurbuz/mcp-literatur-server)'ın `index_paper` tool'u bunu çağırıyor |
 | `GET /health` | Servisin ayakta olup olmadığını kontrol eder (dış bağımlılığa dokunmaz) |
@@ -72,12 +73,14 @@ Repo kökündeki `Dockerfile` Render'ın "New Web Service → Docker" seçeneği
 
 **Cold start ve indeksleme:** Render'ın ücretsiz katmanında disk kalıcı değil, bu yüzden `chroma_db` build zamanında değil, **sunucu ilk ayağa kalkarken** (`startup_index()`) PubMed'den doldurulur. Sonucu: bir süre istek gelmeyip container uyuduktan sonraki ilk istek, hem Render'ın kendi soğuk başlangıcını hem de bu yeniden indeksleme sürecini (~20-60 saniye, gerçek PubMed/Gemini API çağrılarıyla) yaşar. Sonraki istekler hızlıdır. Bu bir hata değil, ücretsiz katmanın kalıcı disk vermemesinin doğal sonucu — gerçek üretimde bunun yerine yönetilen bir vector DB (Pinecone, Weaviate Cloud) kullanılırdı.
 
+**Maliyet:** Üretim modeli, gerçek bir Gemini ön ödeme kredisi tükenmesi (RESOURCE_EXHAUSTED, HTTP 402) yaşanınca `gemini-3.5-flash`'tan daha ucuz `gemini-2.5-flash`'a düşürüldü — her `/ask` ve her `/index` gerçek bir API çağrısı yaptığı için, sık test/demo kullanımında kredi tükenmesi gerçek bir risk.
+
 Detaylar ve karşılaşılan sorunlar için [FAZ4_RAPOR.md](FAZ4_RAPOR.md)'a bak.
 
 ## Test ve değerlendirme
 
 ```bash
-uv run pytest              # 28 birim test (API'ye dokunmaz, deterministik)
+uv run pytest              # 36 birim test (API'ye dokunmaz, deterministik)
 uv run evaluate_retrieval.py   # retrieval metrikleri (hit rate, MRR, recall)
 uv run evaluate_ragas.py       # RAGAS ile faithfulness / relevancy / precision / recall
 ```
@@ -90,7 +93,7 @@ Her push/PR'da GitHub Actions üzerinde testler otomatik çalışır (`.github/w
 Kullanıcı sorusu (Türkçe)
         │
         ▼
- translate_query ──► İngilizce sorgu            (gemini-3.5-flash)
+ translate_query ──► İngilizce sorgu            (gemini-2.5-flash)
         │
         ▼
  embed_texts (RETRIEVAL_QUERY)                  (gemini-embedding-001)

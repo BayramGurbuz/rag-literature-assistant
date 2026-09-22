@@ -2,7 +2,7 @@
 
 **Proje:** Faz 2'nin RAG pipeline'ını bağımsız bir repoya ayırma, FastAPI ile HTTP API'ye sarma, Docker ile konteynerleştirme, GitHub Actions ile CI kurma ve Render'a canlı deploy etme.
 **Klasör:** `rag-literature-assistant/` (artık kendi başına bir repo — bkz. Bölüm 0)
-**Canlı URL:** https://rag-literature-assistant.onrender.com (`/docs`, `/health`, `/ask`)
+**Canlı URL:** https://rag-literature-assistant.onrender.com (`/` özel arayüz, `/docs`, `/health`, `/ask`, `/index`)
 **CI:** GitHub Actions, her push/PR'da `pytest` (badge: README'de)
 
 ---
@@ -126,6 +126,7 @@ uv run pytest -v                       # 28 test
 2. **Kalıcı vector DB:** Render'ın her cold start'ta yeniden indekslemesi yerine Pinecone/Weaviate Cloud gibi yönetilen bir servise geçmek — `POST /index` ile eklenen makalelerin de cold start'ta kaybolmaması için bu artık daha önemli.
 3. ~~Faz 2 ↔ Faz 3 entegrasyonunu HTTP üzerinden yeniden kurmak~~ — **yapıldı, bkz. Bölüm 8.**
 4. **`startup_index()`'in engelleyici (blocking) doğası:** Şu an `/health` bile indeksleme bitene kadar cevap vermiyor (import zamanında çalışıyor); arka planda indeksleyip `/health`'i ayrı bir "ready" durumuyla ayırmak düşünülebilir.
+5. **Kota hatalarını ayırt etmek:** `answer_question`, Gemini'nin 402 (kredi tükenmesi) / 429 (rate limit) gibi hatalarını da genel bir exception olarak yutuyor; `errors.APIError.status`'a göre kullanıcıya "servis çökük" değil "kota/faturalandırma sorunu, birkaç dakika sonra dene" gibi ayrıştırılmış bir mesaj dönebilir (bkz. Bölüm 9.3).
 
 ---
 
@@ -145,3 +146,30 @@ Bölüm 5'te bırakılan tradeoff çözüldü: `mcp-literatur-server`'ın `index
 **Yan etki — `mcp-literatur-server` basitleşti:** `chromadb` ve embedding için `google-genai` kullanımı bu repodan tamamen kalktı (41 paket `pyproject.toml`'dan düştü) — artık makale fetch/chunk/embed mantığı yalnızca `rag-literature-assistant`'ta, tek yerde yaşıyor.
 
 **Yol boyunca bulunan ek bir sorun:** `agent_client.py`'nin `StdioServerParameters`'ı, `GEMINI_API_KEY` için daha önce eklenmiş olan açık `env=` geçişini **yalnızca o değişkene** sahipti — `RAG_API_URL`/`INDEX_API_KEY` de aynı allowlist sorununa takılıyordu (varsayılan olarak geçmiyorlardı), ve `paper_server.py` artık `genai.Client()` kullanmadığı için `GEMINI_API_KEY` geçişi zaten gereksizdi. `env=` sözlüğü `RAG_API_URL`/`INDEX_API_KEY`'i geçirecek şekilde güncellendi; `.env` dosyası tamamen kaldırılarak (yalnızca `os.environ`'dan silmek değil) hem yerelde hem Docker'da (host'taki servise `host.docker.internal` ile erişerek) rigorously test edildi.
+
+---
+
+## 9. Ek — Özel arayüz, model değişikliği ve bir gerçek kesinti
+
+### 9.1 Swagger yerine kendi arayüzü (`GET /`)
+
+`/docs` bir geliştirici/test aracı, demo linki paylaşılacak bir ürün arayüzü değil. `GET /` artık `static/index.html`'i (self-contained HTML/CSS/JS, harici bağımlılık yok) döndürüyor: soru kutusu, örnek soru çip'leri, cevabı ve kaynakları ayrı bloklarda gösteren bir arayüz. `/docs` ham API'yi keşfetmek isteyenler için hâlâ ayakta.
+
+**Yazarken bulunan gerçek bir bug:** İlk regex (`^[-*] (.+)$`) kaynak listesindeki madde işaretlerini dönüştürüyordu ama `main.py`'nin ürettiği kaynak satırları iki boşlukla girintili (`"  - ..."`) — `.strip()` yalnızca **ilk** satırın girintisini kazara yediği için sadece o satır madde işaretine dönüşüyor, diğerleri düz metin kalıyordu. Python'da regex'i simüle ederek doğrulanıp `^\s*[-*] (.+)$`'a düzeltildi; düzeltmeden önce/sonra çıktı karşılaştırıldı.
+
+### 9.2 Model: `gemini-3.5-flash` → `gemini-2.5-flash`
+
+Bkz. 9.3 — gerçek bir kredi tükenmesi sonrası, maliyeti düşürmek için üretim modeli değiştirildi (`main.py`'deki `GENERATION_MODEL`). `translate_query`, `stream_answer` ve RAGAS hakem modeli (`evaluate_ragas.py`, aynı sabiti kullanıyor) hepsi bu değişiklikten otomatik olarak etkilendi — tek bir sabit değişti.
+
+### 9.3 Gerçek bir kesinti: Gemini ön ödeme kredisi tükenmesi
+
+mcp-literatur-server'daki agent trace özelliğini canlıda test ederken `/ask` **500** döndürmeye başladı — hem RAG hem MCP servisinde, basit sorularda bile. Yerelde tekrar üretilip gerçek traceback okundu:
+
+```
+google.genai.errors.ClientError: 402 RESOURCE_EXHAUSTED.
+{'error': {'message': 'Your prepayment credits are depleted...'}}
+```
+
+Kod hatası değildi — bu oturumdaki yoğun gerçek API kullanımı (RAGAS değerlendirmesi, tekrarlanan canlı doğrulamalar, agent testleri) kullanıcının Gemini ön ödeme kredisini tüketmişti. Kullanıcı AI Studio'dan kredi yükledi, model daha ucuz bir sürüme düşürüldü (9.2), her iki servis de canlıda gerçek isteklerle yeniden doğrulandı.
+
+**Ders:** Gerçek para harcayan bir API'yi yoğun test/demo döngüsünde kullanan bir proje için, HTTP 402/429 gibi kota hatalarını kullanıcıya "servis çökük" değil "kota/faturalandırma sorunu" olarak ayırt eden bir hata mesajı (şu an `answer_question` bunu genel bir exception olarak yutuyor, `errors.APIError`'ı yakalayıp status koduna göre farklı mesaj verebilirdi) ileride eklenebilir — bkz. Bölüm 7.

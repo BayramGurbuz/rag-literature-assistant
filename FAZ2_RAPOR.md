@@ -6,6 +6,8 @@
 **Modeller:** üretim ve hakem `gemini-3.5-flash`, embedding `gemini-embedding-001` (3072 boyut)
 **Vektör DB:** Chroma (`PersistentClient`, yerel diske kalıcı)
 
+> **Not (Faz 4 sonrası):** Üretim modeli, gerçek bir Gemini kredi tükenmesi sonrası maliyet nedeniyle `gemini-2.5-flash`'a düşürüldü (bkz. [FAZ4_RAPOR.md](FAZ4_RAPOR.md) Bölüm 9). Aşağıdaki ölçümler bu raporun yazıldığı andaki `gemini-3.5-flash` ile alınmıştır; tarihsel doğruluğu için değiştirilmedi.
+
 ---
 
 ## 1. Özet
