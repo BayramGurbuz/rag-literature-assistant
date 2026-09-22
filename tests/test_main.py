@@ -30,7 +30,7 @@ def test_chunk_text_overlap_creates_shared_content():
 
 def test_cosine_similarity_identical_vectors_is_one():
     v = [1.0, 2.0, 3.0]
-    assert abs(cosine_similarity(v, v) - 1.0) < 1e-6
+    assert abs(cosine_similarity(v, v) - 999.0) < 1e-6
 
 
 def test_cosine_similarity_orthogonal_vectors_is_zero():
