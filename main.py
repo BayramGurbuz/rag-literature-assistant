@@ -359,20 +359,40 @@ def chat_loop(client: genai.Client, collection: chromadb.Collection) -> None:
             print(f"\n[Hata] API isteği başarısız oldu ({e.status}): {e.message}\n")
 
 
+def ensure_indexed(client: genai.Client, collection: chromadb.Collection) -> None:
+    """Koleksiyon boşsa (ya da önceki çalıştırma eksik kaldıysa) PubMed'den doldurur.
+
+    "indexed" bayrağı yalnızca her arama ve makale başarıyla işlenince yazılır:
+    bir şey atlanırsa bir sonraki çağrıda yalnızca eksikler tamamlanır.
+    """
+    if (collection.metadata or {}).get("indexed"):
+        return
+    print("İlk çalıştırma: makaleler toplanıp indeksleniyor...")
+    if index_papers(client, collection, SEARCH_TERMS):
+        collection.modify(metadata={"indexed": True})
+    else:
+        print("[Uyarı] İndeksleme eksik kaldı; bir sonraki çalıştırmada tamamlanacak.")
+
+
+def startup_index() -> None:
+    """API sunucusu başlarken bir kez çağrılır.
+
+    chroma_db/ .gitignore'da olduğu için Render gibi git-tabanlı build yapan
+    platformlarda image'a gömülü gelmiyor (yalnızca yerel `docker build` bunu
+    yapabiliyor, çünkü yerel diskten okuyor). Bu yüzden veri, build zamanında
+    değil, sunucu ilk ayağa kalkarken toplanıyor.
+    """
+    client, collection = _get_client_and_collection()
+    ensure_indexed(client, collection)
+
+
 def main() -> None:
     load_dotenv()
     client = genai.Client()  # GEMINI_API_KEY ortam değişkeninden otomatik okunur
     chroma_client = chromadb.PersistentClient(path="./chroma_db")
     collection = chroma_client.get_or_create_collection(name="bci_abstracts")
 
-    # "indexed" bayrağı yalnızca her arama ve makale başarıyla işlenince yazılır:
-    # bir şey atlanırsa bir sonraki çalıştırmada yalnızca eksikler tamamlanır.
-    if not (collection.metadata or {}).get("indexed"):
-        print("İlk çalıştırma: makaleler toplanıp indeksleniyor...")
-        if index_papers(client, collection, SEARCH_TERMS):
-            collection.modify(metadata={"indexed": True})
-        else:
-            print("[Uyarı] İndeksleme eksik kaldı; bir sonraki çalıştırmada tamamlanacak.")
+    ensure_indexed(client, collection)
     print(f"Koleksiyonda toplam {collection.count()} chunk var\n")
 
     chat_loop(client, collection)
