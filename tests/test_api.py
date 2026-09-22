@@ -13,6 +13,12 @@ def test_health_endpoint():
     assert response.json() == {"status": "ok"}
 
 
+def test_home_page_serves_html():
+    response = client.get("/")
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/html")
+
+
 def test_ask_endpoint_returns_answer_field():
     with patch("api.answer_question", return_value="sahte cevap"):
         response = client.post("/ask", json={"question": "SSVEP nedir?"})

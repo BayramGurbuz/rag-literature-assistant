@@ -1,8 +1,10 @@
 import os
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Header, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from main import (  # Faz 2'deki fonksiyonların
@@ -32,6 +34,13 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="BCI Literatür Asistanı", lifespan=lifespan)
+
+STATIC_DIR = Path(__file__).resolve().parent / "static"
+
+
+@app.get("/", include_in_schema=False)
+def home() -> FileResponse:
+    return FileResponse(STATIC_DIR / "index.html")
 
 
 class AskRequest(BaseModel):
