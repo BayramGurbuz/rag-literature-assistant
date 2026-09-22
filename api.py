@@ -1,7 +1,16 @@
+import os
+
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from pydantic import BaseModel
 
 from main import answer_question  # Faz 2'deki fonksiyonun
+
+load_dotenv()  # main.py bunu tembel çağırır; burada erken kontrol için hemen yapıyoruz
+# Eksikse /ask ilk çağrıldığında değil, container başlarken hemen patlasın —
+# Render'da "deploy oldu ama çalışmıyor" yerine "deploy başarısız oldu" görünür.
+if not os.getenv("GEMINI_API_KEY"):
+    raise RuntimeError("GEMINI_API_KEY ortam değişkeni ayarlanmamış.")
 
 app = FastAPI(title="BCI Literatür Asistanı")
 
