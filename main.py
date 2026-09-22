@@ -231,7 +231,7 @@ def select_chunks(
 
 
 def retrieve(
-    client: genai.Client, collection: chromadb.Collection, question: str
+    client: genai.Client, collection: chromadb.Collection, question: str, n_results: int = N_RESULTS
 ) -> tuple[list[str], list[dict]]:
     query = translate_query(client, question)
     query_embedding = embed_texts(client, [query], task_type="RETRIEVAL_QUERY")[0]
@@ -239,7 +239,7 @@ def retrieve(
         query_embeddings=[query_embedding], n_results=min(N_CANDIDATES, collection.count())
     )
     relevant = select_chunks(
-        results["documents"][0], results["metadatas"][0], results["distances"][0]
+        results["documents"][0], results["metadatas"][0], results["distances"][0], n_results=n_results
     )
     documents = [doc for doc, _ in relevant]
     # aynı makaleden birden fazla chunk gelebilir; kaynak listesinde bir kez göster
@@ -286,6 +286,43 @@ def index_papers(
             continue
         print(f"PMID {paper['pmid']}: {n_chunks} chunk indekslendi")
     return complete
+
+
+_client: genai.Client | None = None
+_collection: chromadb.Collection | None = None
+
+
+def _get_client_and_collection() -> tuple[genai.Client, chromadb.Collection]:
+    """Client/koleksiyonu tembel açar ve modül düzeyinde saklar (API sunucusu bu
+    fonksiyonu istek başına değil, her process için bir kez çağırmalı)."""
+    global _client, _collection
+    if _client is None:
+        load_dotenv()
+        _client = genai.Client()
+    if _collection is None:
+        chroma_client = chromadb.PersistentClient(path="./chroma_db")
+        _collection = chroma_client.get_or_create_collection(name="bci_abstracts")
+    return _client, _collection
+
+
+def answer_question(question: str, n_results: int = N_RESULTS) -> str:
+    """chat_loop'un stream+print akışının stream'siz hali — API katmanı için."""
+    client, collection = _get_client_and_collection()
+    documents, sources = retrieve(client, collection, question, n_results=n_results)
+    if not documents:
+        return "İndekslenen literatürde bu soruyla ilgili bir içerik bulamadım."
+
+    parts: list[str] = []
+    try:
+        answered = stream_answer(client, question, documents, parts.append)
+    except errors.APIError as e:
+        return f"[Hata] API isteği başarısız oldu ({e.status}): {e.message}"
+
+    answer = "".join(parts)
+    if answered and sources:
+        source_lines = "\n".join(f"  - {format_source(meta)}" for meta in sources)
+        answer = f"{answer}\n\nKaynaklar:\n{source_lines}"
+    return answer
 
 
 def chat_loop(client: genai.Client, collection: chromadb.Collection) -> None:
